@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}노래방 점수 분석 프로그램{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header class="topbar">
+        <a class="brand" href="{{ url_for('index') }}">🎤 노래방 점수 분석</a>
+        <nav>
+            <a href="{{ url_for('index') }}">대시보드</a>
+            <a href="{{ url_for('download_csv') }}">CSV 다운로드</a>
+            <a href="{{ url_for('api_stats') }}">API</a>
+        </nav>
+    </header>
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+    <footer class="footer">
+        노래방 점수 기록을 바탕으로 평균, 최고점, 변화 추세를 확인할 수 있습니다.
+    </footer>
+</body>
+</html>
