@@ -98,7 +98,10 @@ def song_stat(title, song_records):
     deviation = round(pstdev(scores), 1) if len(scores) >= 2 else 0
     consistency = max(0, round(100 - deviation * 8, 1))
     goal = min(100, max(scores) + 2)
-    needed = max(0, goal - last)
+    # 단기 목표는 해당 곡의 기존 최고점보다 2점 높은 점수로 잡는다.
+    # 단, 노래방 점수 범위를 고려해 최대 100점을 넘지 않게 한다.
+    # needed는 최근 3회 평균을 기준으로 목표까지 얼마나 남았는지 계산한다.
+    needed = round(max(0, goal - recent_avg), 1)
     if delta_recent >= 1.5:
         comment = f"최근 평균이 이전보다 {delta_recent:+.1f}점 올라 상승세입니다. 이 곡은 지금 연습 효율이 좋습니다."
     elif delta_recent <= -1.5:
@@ -152,14 +155,14 @@ def build_dashboard(records):
         best = overall["best_record"]
         insights.append({
             "title": "최고점 기록",
-            "body": f"현재 최고점은 '{best['song']}'의 {best['score']}점입니다. 제출 화면에서 성과가 한눈에 보입니다.",
+            "body": f"현재 최고점은 '{best['song']}'의 {best['score']}점입니다. 지금까지 입력한 기록 중 가장 높은 점수입니다.",
             "tone": "good",
         })
     if song_rows:
         favorite = max(song_rows, key=lambda s: s["count"])
         insights.append({
             "title": "가장 많이 연습한 곡",
-            "body": f"'{favorite['title']}'을/를 {favorite['count']}회 기록했습니다. 반복 기록이 있어 변화 분석의 설득력이 높습니다.",
+            "body": f"'{favorite['title']}'을/를 {favorite['count']}회 기록했습니다. 기록 횟수가 많아 점수 흐름을 비교하기 좋은 곡입니다.",
             "tone": "neutral",
         })
         improved_candidates = [s for s in song_rows if s["count"] >= 2]
@@ -167,7 +170,7 @@ def build_dashboard(records):
             improved = max(improved_candidates, key=lambda s: s["improvement"])
             insights.append({
                 "title": "가장 크게 오른 곡",
-                "body": f"'{improved['title']}'은/는 첫 기록 대비 {improved['improvement']:+}점 변화했습니다. 단순 저장이 아니라 성장 분석을 제공합니다.",
+                "body": f"'{improved['title']}'은/는 첫 기록 대비 {improved['improvement']:+}점 변화했습니다. 처음 기록과 최근 기록의 차이가 가장 큰 곡입니다.",
                 "tone": "good" if improved["improvement"] >= 0 else "bad",
             })
         stable_candidates = [s for s in song_rows if s["count"] >= 3]
@@ -175,13 +178,13 @@ def build_dashboard(records):
             stable = max(stable_candidates, key=lambda s: s["consistency"])
             insights.append({
                 "title": "가장 안정적인 곡",
-                "body": f"'{stable['title']}'의 안정도 지수는 {stable['consistency']}점입니다. 표준편차를 이용해 점수 흔들림을 계산했습니다.",
+                "body": f"'{stable['title']}'의 안정도 지수는 {stable['consistency']}점입니다. 점수 변동 폭이 작을수록 안정도가 높게 계산됩니다.",
                 "tone": "neutral",
             })
         focus = min(song_rows, key=lambda s: (s["recent_avg"], -s["count"]))
         insights.append({
             "title": "다음 연습 추천",
-            "body": f"'{focus['title']}'은/는 최근 평균 {focus['recent_avg']}점입니다. 목표 {focus['goal']}점까지 {focus['needed']}점 남았습니다.",
+            "body": f"'{focus['title']}'은/는 최근 평균 {focus['recent_avg']}점입니다. 기존 최고점보다 2점 높은 {focus['goal']}점을 단기 목표로 잡았습니다. 평균 기준 {focus['needed']}점 향상이 필요합니다.",
             "tone": "bad" if focus["needed"] >= 3 else "neutral",
         })
     return overall, song_rows, insights

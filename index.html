@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}대시보드 - 노래방 점수 분석{% endblock %}
+{% block content %}
+<section class="hero">
+    <div>
+        <p class="eyebrow">Vibe Coding Final Project</p>
+        <h1>노래방 점수를 기록하고, 변화 추세를 분석하는 웹앱</h1>
+        <p class="lead">곡명과 점수를 입력하면 평균, 최고점, 최근 3회 변화, 안정도, 다음 연습 추천까지 자동으로 계산합니다.</p>
+    </div>
+    <form class="score-form" method="post" action="{{ url_for('add_score') }}">
+        <h2>새 점수 입력</h2>
+        <label>곡명 <input name="song" required placeholder="예: 응급실"></label>
+        <label>가수 <input name="artist" placeholder="예: izi"></label>
+        <label>점수 <input type="number" min="0" max="100" name="score" required placeholder="0~100"></label>
+        <label>날짜 <input type="date" name="date" value="{{ overall.today }}"></label>
+        <label>메모 <textarea name="memo" rows="3" placeholder="예: 후렴에서 음정 흔들림"></textarea></label>
+        <button type="submit">기록 추가</button>
+    </form>
+</section>
+
+<section class="cards four">
+    <article class="card stat"><span>총 기록</span><strong>{{ overall.total_records }}</strong><small>개</small></article>
+    <article class="card stat"><span>등록 곡</span><strong>{{ overall.song_count }}</strong><small>곡</small></article>
+    <article class="card stat"><span>전체 평균</span><strong>{{ overall.average }}</strong><small>점</small></article>
+    <article class="card stat"><span>최고 점수</span><strong>{% if overall.best_record %}{{ overall.best_record.score }}{% else %}0{% endif %}</strong><small>점</small></article>
+</section>
+
+<section class="panel">
+    <div class="section-title">
+        <div>
+            <p class="eyebrow">자동 분석 리포트</p>
+            <h2>점수 데이터로 생성한 인사이트</h2>
+        </div>
+        <form class="search" method="get" action="{{ url_for('index') }}">
+            <input name="q" placeholder="곡명/가수 검색" value="{{ q }}">
+            <button>검색</button>
+        </form>
+    </div>
+    <div class="insights">
+        {% for item in insights %}
+        <article class="insight {{ item.tone }}">
+            <strong>{{ item.title }}</strong>
+            <p>{{ item.body }}</p>
+        </article>
+        {% endfor %}
+    </div>
+    <div class="wide-chart">
+        <svg viewBox="0 0 520 120" preserveAspectRatio="none" aria-label="전체 점수 추세 그래프">
+            <line x1="16" y1="104" x2="504" y2="104" />
+            <line x1="16" y1="16" x2="16" y2="104" />
+            <polyline points="{{ overall.timeline }}" />
+        </svg>
+        <p>입력 순서 기준 전체 점수 추세입니다.</p>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="section-title">
+        <div>
+            <p class="eyebrow">곡별 비교</p>
+            <h2>어떤 곡이 오르고 있는지 확인</h2>
+        </div>
+    </div>
+    <div class="song-grid">
+        {% for song in song_rows %}
+        <article class="song-card">
+            <div class="song-head">
+                <div>
+                    <h3><a href="{{ url_for('song_detail', title=song.title) }}">{{ song.title }}</a></h3>
+                    <p>{{ song.artist or '가수 미입력' }} · {{ song.count }}회 기록</p>
+                </div>
+                <span class="badge {{ song.trend_class }}">{{ song.trend }}</span>
+            </div>
+            <svg class="spark" viewBox="0 0 180 56" preserveAspectRatio="none">
+                <polyline points="{{ song.sparkline }}" />
+            </svg>
+            <div class="mini-stats">
+                <span>평균 <b>{{ song.average }}</b></span>
+                <span>최고 <b>{{ song.best }}</b></span>
+                <span>최근변화 <b>{{ '%+.1f'|format(song.delta_recent) }}</b></span>
+                <span>안정도 <b>{{ song.consistency }}</b></span>
+            </div>
+            <p class="comment">{{ song.comment }}</p>
+        </article>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="panel">
+    <div class="section-title">
+        <div>
+            <p class="eyebrow">최근 기록</p>
+            <h2>입력된 노래방 점수</h2>
+        </div>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>날짜</th><th>곡명</th><th>가수</th><th>점수</th><th>메모</th><th></th></tr></thead>
+            <tbody>
+            {% for r in latest %}
+                <tr>
+                    <td>{{ r.date }}</td>
+                    <td><a href="{{ url_for('song_detail', title=r.song) }}">{{ r.song }}</a></td>
+                    <td>{{ r.artist }}</td>
+                    <td><strong>{{ r.score }}</strong></td>
+                    <td>{{ r.memo }}</td>
+                    <td>
+                        <form method="post" action="{{ url_for('delete_record', record_id=r.id) }}" onsubmit="return confirm('이 기록을 삭제할까요?')">
+                            <button class="ghost" type="submit">삭제</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}
